@@ -10,10 +10,6 @@ I am not using create dates or modify date columns quite literally only because 
 suggest some kind of create/change tracking mechanism in a live production DB 
 */
 
-CREATE TABLE MASTER_ADDRESS (
-    AddressID SERIAL PRIMARY KEY,
-    [Address] VARCHAR(MAX) -- revisit length
-);
 
 CREATE TABLE MASTER_STATE (
     StateID SERIAL PRIMARY KEY,
@@ -31,18 +27,28 @@ CREATE TABLE MASTER_COUNTY (
     [County] VARCHAR(MAX) -- revisit length
 );
 
+CREATE TABLE MASTER_ADDRESS (
+    AddressID SERIAL PRIMARY KEY,
+    [Address] VARCHAR(MAX) -- revisit length
+    
+);
+
 CREATE TABLE MASTER_GEO (
     CSCID SERIAL PRIMARY KEY,
     CityID INT REFERENCES MASTER_CITY(CityID),
     CountyID INT REFERENCES MASTER_COUNTY(CountyID),
-    StateID INT REFERENCES MASTER_STATE(StateID)
+    StateID INT REFERENCES MASTER_STATE(StateID),
+    Zip INT,
+    LAT FLOAT,
+    LON FLOAT,
     UNIQUE(CityID,CountyID,StateID)
-)
+);
 
-CREATE TABLE MASTER_PATIENTNAME (
+CREATE TABLE MASTER_NAME (
     NameID SERIAL PRIMARY KEY,
-    [Name] VARCHAR(25)
-)
+    [Name] VARCHAR(25),
+    FLMNameFlag BOOLEAN, -- True: First, False: Last, NULL: MaidenName
+);
 
 -- Yes, this does makes some string replication BUT, I think it makes sense to store these together
 CREATE TABLE MASTER_PATIENT_DEMODETAILS (
@@ -51,13 +57,39 @@ CREATE TABLE MASTER_PATIENT_DEMODETAILS (
     Prefix VARCHAR(5),
     Gender BOOLEAN,
     Married BOOLEAN
-)
+); -- This should not produce a massive replication but yes it does produce a little
 
-CREATE TABLE MASTER_ETHRACE (
-    EthraceID SERIAL PRIMARY KEY,
+CREATE TABLE MASTER_ETHNICITY (
+    EthID SERIAL PRIMARY KEY,
     Ethncity VARCHAR(8) NOT NULL,
     RaceHispanic BOOLEAN
-)
+);
+
+CREATE TABLE MASTER_ORGNAMES (
+    OrgID UUID NOT NULL PRIMARY KEY,
+    OrgName VARCHAR(50)
+);
+
+CREATE TABLE MASTER_PHONE (
+    PhoneID SERIAL,
+    PhoneNumber VARCHAR(15)
+);
+
+CREATE TABLE MASTER_PROVIDER_DETAILS (
+    ProviderID UUID NOT NULL PRIMARY KEY,
+    ProviderFName VARCHAR(25),
+    ProviderLName VARCHAR(25),
+    Speciality VARCHAR(20),
+    Gender BOOLEAN
+);
+
+---------------------------------------------------------------------------------------------------------------------
+/*###################################################################################################################
+
+                                                MASTER TABLES ABOVE
+
+###################################################################################################################*/
+---------------------------------------------------------------------------------------------------------------------
 
 CREATE TABLE PATIENTS (
     PatientID UUID NOT NULL PRIMARY KEY,
@@ -69,16 +101,11 @@ CREATE TABLE PATIENTS (
 ---- Need to make a seperate, more restrictive DB for this type of data
 CREATE TABLE PATIENTS_IDENTIFICATION (
     PatientID UUID NOT NULL PRIMARY KEY REFERENCES PATIENTS(PatientID) ON DELETE CASCADE,
-    SSN VARCHAR(15),
-    Driver VARCHAR(10),
-    Passport VARCHAR(10)
-
-    
+    SSN UUID NOT NULL,
+    Driver VARCHAR(10) UUID,
+    Passport VARCHAR(10) UUID
 )
 */
-
-
-------------------------- STOPPED HERE -------------- LETS CHANGE 
 CREATE TABLE PATIENTS_GEOGRAPHIC_DATA (
     PatientID UUID NOT NULL PRIMARY KEY REFERENCES PATIENTS(PatientID) ON DELETE CASCADE,
     AddressID INT NOT NULL,
@@ -92,64 +119,34 @@ CREATE TABLE PATIENTS_GEOGRAPHIC_DATA (
 
 CREATE TABLE PATIENTS_DEMOGRAPHIC_DATA (
     PatientID UUID NOT NULL PRIMARY KEY REFERENCES PATIENTS(PatientID) ON DELETE CASCADE,
-    SPGM_ID INT NOT NULL REFERENCES MASTER_PATIENT_DEMODETAILS(SPGM_ID) ON DELETE RESTRICT
-)
+    SPGM_ID INT NOT NULL REFERENCES MASTER_PATIENT_DEMODETAILS(SPGM_ID) ON DELETE RESTRICT,
+    EtheID INT NOT NULL REFERENCES MASTER_PATIENT_DEMODETAILS(SPGM_ID) ON DELETE RESTRICT
+);
 
 CREATE TABLE PATIENTS_DETAILS (
     PatientID UUID NOT NULL PRIMARY KEY REFERENCES PATIENTS(PatientID) ON DELETE CASCADE,
+    FNameID INT REFERENCES MASTER_NAME(NameID) ON DELETE SET NULL, -- will need to map these IDs
+    LnameID INT REFERENCES MASTER_NAME(NameID) ON DELETE SET NULL, -- will need to map these IDs
+    MaidenNameID  REFERENCES MASTER_NAME(NameID) ON DELETE SET NULL INT,
+    Gender BOOLEAN,
     BirthplaceID INT NOT NULL, -- will need to map these IDs
     Birthplace VARCHAR(20)
-)
-
-CREATE TABLE PATIENTS (
-    PatientID UUID NOT NULL PRIMARY KEY,
-    BirthDate DATE NOT NULL,
-    DeathDate DATE,
-    SSNID INT NOT NULL, -- map ID NOT ACTUAL SSN, 
-                        --please note that the actual data will be retrievable but placed in a much more restrictive DB
-    DriverID INT, -- will need to map these IDs
-    PassportID INT, -- will need to map these IDs
-    PrefixID INT, -- will need to map these IDs
-    FNameID INT, -- will need to map these IDs
-    LnameID INT, -- will need to map these IDs
-    SuffixID INT, -- will need to map these IDs
-    MaidenNameID INT, -- will need to map these IDs
-    MartialID INT, -- will need to map these IDs
-    RaceID INT, -- will need to map these IDs
-    EthnicityID INT, -- will need to map these IDs
-    GenderID INT, -- will need to map these IDs
-    BirthplaceID INT NOT NULL, -- will need to map these IDs
-
-    Healthcare_Expense FLOAT,
-    Healthcare_Coverage FLOAT
 );
+
 
 CREATE TABLE ORGANIZATIONS (
     OrgID UUID NOT NULL PRIMARY KEY,
-    OrgNameID INT NOT NULL, -- will need to map these IDs
-    AddressID INT NOT NULL, -- will need to map these IDs
-    CityID INT NOT NULL, -- will need to map these IDs
-    StateID INT NOT NULL, -- will need to map these IDs
-    Zip INT NOT NULL,
-    LAT FLOAT,
-    LON FLOAT,
-    Phone VARCHAR(15),
+    CSCID INT REFERENCES MASTER_GEO(CSCID) ON DELETE RESTRICT,
+    PhoneID INT,
     -- No revenue (all 0s) is seen in EDA, we will not incorporate
     Utilization INT
 );
 
 CREATE TABLE PROVIDERS (
     ProviderID UUID NOT NULL PRIMARY KEY
-    OrgID UUID NOT NULL REFERENCES ORGANIZATIONS(OrgID) DELETE ON CASCADE,
-    ProviderNameID INT NOT NULL,
-    GenderID INT, -- should be able to reuse from GenderID
+    OrgID UUID NOT NULL REFERENCES ORGANIZATIONS(OrgID) DELETE ON CASCADE, -- should be able to reuse from GenderID
     SpecialityID INT, -- will need to map these IDs
-    AddressID INT NOT NULL, -- will need to map these IDs
-    CityID INT NOT NULL, -- will need to map these IDs
-    StateID INT NOT NULL, -- will need to map these IDs
-    Zip INT NOT NULL,
-    LAT FLOAT,
-    LON FLOAT,
+    CSCID INT REFERENCES MASTER_GEO(CSCID) ON DELETE RESTRICT,
     Utilization INT
 );
 
@@ -273,9 +270,6 @@ CREATE TABLE CLAIMSTRANSACTIONS (
     */
 );
 
-INSERT INTO CLAIMSTRANSACTIONS
-    (RowID,TransactionID,ClaimID)
-
 -- 8.
 CREATE TABLE PAYERTRANSITIONS (
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL,
@@ -366,11 +360,6 @@ CREATE TABLE DEVICES (
     UDIID INT
 );
 
-INSERT INTO DEVICES
- (Start, Stop, Patient, Encounter, Code, DescriptionID, UDIID)
-VALUES
-SELECT Start, Stop, Patient, Encounter, Code, DescriptionID, UDIID
-    FROM RAWPATIENTSDATA..DEVICES dev
 
 -- 17.
 CREATE TABLE ALLERGIES (
