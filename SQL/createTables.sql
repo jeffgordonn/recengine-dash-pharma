@@ -150,6 +150,7 @@ CREATE TABLE PROVIDERS (
     Utilization INT
 );
 
+-------======================= STOPPED HERE =============================-------
 CREATE TABLE CLAIMS (
     ClaimID UUID NOT NULL PRIMARY KEY,
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE CASCADE SET NULL,
