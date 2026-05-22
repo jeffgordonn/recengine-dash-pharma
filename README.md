@@ -26,4 +26,7 @@ Delete on cascade is used on the following levels across fact tables.
     * To establish which HCPs/Organizations serve our target audience, we need insight into their claims, ideally end to end service but there is not point in maintaining details regarding claims if there is nothing to associate
 
 ## Phase 2 - Segmentation Strategies
+### Ensemble Similarity Score - Weighted L1, L2, Cosine distance
+By creating an ideal patient, or multiple personas in reality, we can create a ranked list of the best serving HCPs via claims data for the patient. This will not only be able to weight the symptoms and service, but also the payer coverage. With market access being such a hot topic, such a combined logic is necessary
+
 ### What are we targeting?
