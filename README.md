@@ -25,8 +25,17 @@ Delete on cascade is used on the following levels across fact tables.
 - Claims, Claims Transactions  - `CASCADE`
     * To establish which HCPs/Organizations serve our target audience, we need insight into their claims, ideally end to end service but there is not point in maintaining details regarding claims if there is nothing to associate
 
+
 ## Phase 2 - Segmentation Strategies
 ### Ensemble Similarity Score - Weighted L1, L2, Cosine distance
 By creating an ideal patient, or multiple personas in reality, we can create a ranked list of the best serving HCPs via claims data for the patient. This will not only be able to weight the symptoms and service, but also the payer coverage. With market access being such a hot topic, such a combined logic is necessary
+
+#### Similarity Functions for Scoring
+```SQL
+CosineSimilarity_Row(A_s TEXT, B_s TEXT)
+
+```
+
+Yes, I understand there might be other options to go to but I think this will provide an interpretable and strong baseline for creating a claims based targeting recommender. I also under pgvector could be used here, but this is supposed to be a project showing my competency... I will use it as a comparator tho, despite it probably going to blow mine away in speed.
 
 ### What are we targeting?
