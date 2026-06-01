@@ -160,7 +160,10 @@ BEGIN
 
 
 END;
-SS;
+$$;
+
+
+---- Bayesian Components
 
 -- This will not only check the vectors for = lengths and column values, but I am going to reoganize the columns for ensurance of proper alignment on dims, additionally
 -- Table 1 should be 1 row, as it is the anchor

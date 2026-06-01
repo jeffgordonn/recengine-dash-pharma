@@ -27,8 +27,11 @@ Delete on cascade is used on the following levels across fact tables.
 
 
 ## Phase 2 - Segmentation Strategies
-### Ensemble Similarity Score - Weighted L1, L2, Cosine distance
-By creating an ideal patient, or multiple personas in reality, we can create a ranked list of the best serving HCPs via claims data for the patient. This will not only be able to weight the symptoms and service, but also the payer coverage. With market access being such a hot topic, such a combined logic is necessary
+### Ensemble Similarity Score - Bayesian Informed Ensemble of weighted L1, L2, Cosine distance 
+By creating an ideal patient, or multiple personas in reality, we can create a ranked list of the best serving HCPs via claims data for the patient. This will not only be able to weight the symptoms and service, but also the payer coverage. With market access being such a hot topic, such a combined logic is necessary. This is where the bayesian component will come in. 
+
+#### HCP Bayesian Informants
+Patient level details in the recommendation engine do not make perfect sense: the person's behaviors are their own they are simply are occuring with doc1, but what if they met doc2? The rec engine should just show who is a good match, not matching real patient with provider. 
 
 #### Similarity Functions for Scoring
 ```SQL
