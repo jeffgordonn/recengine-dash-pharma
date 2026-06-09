@@ -13,23 +13,23 @@ suggest some kind of create/change tracking mechanism in a live production DB
 
 CREATE TABLE MASTER_STATE (
     StateID SERIAL PRIMARY KEY,
-    [State] VARCHAR(MAX) -- revisit length
-    --, [Abbrev] VARCHAR(2) 
+    [State] TEXT -- revisit length
+    --, [Abbrev] TEXT 
 );
 
 CREATE TABLE MASTER_CITY (
     CityID SERIAL PRIMARY KEY,
-    [City] VARCHAR(MAX) -- revisit length
+    [City] TEXT -- revisit length
 );
 
 CREATE TABLE MASTER_COUNTY (
     CountyID SERIAL PRIMARY KEY,
-    [County] VARCHAR(MAX) -- revisit length
+    [County] TEXT -- revisit length
 );
 
 CREATE TABLE MASTER_ADDRESS (
     AddressID SERIAL PRIMARY KEY,
-    [Address] VARCHAR(MAX) -- revisit length
+    [Address] TEXT -- revisit length
     
 );
 
@@ -46,40 +46,40 @@ CREATE TABLE MASTER_GEO (
 
 CREATE TABLE MASTER_NAME (
     NameID SERIAL PRIMARY KEY,
-    [Name] VARCHAR(25),
+    [Name] TEXT,
     FLMNameFlag BOOLEAN, -- True: First, False: Last, NULL: MaidenName
 );
 
 -- Yes, this does makes some string replication BUT, I think it makes sense to store these together
 CREATE TABLE MASTER_PATIENT_DEMODETAILS (
     SPGM_ID SERIAL PRIMARY KEY,
-    Suffix VARCHAR(5),
-    Prefix VARCHAR(5),
+    Suffix TEXT,
+    Prefix TEXT,
     Gender BOOLEAN,
     Married BOOLEAN
 ); -- This should not produce a massive replication but yes it does produce a little
 
 CREATE TABLE MASTER_ETHNICITY (
     EthID SERIAL PRIMARY KEY,
-    Ethncity VARCHAR(8) NOT NULL,
+    Ethncity TEXT NOT NULL,
     RaceHispanic BOOLEAN
 );
 
 CREATE TABLE MASTER_ORGNAMES (
     OrgID UUID NOT NULL PRIMARY KEY,
-    OrgName VARCHAR(50)
+    OrgName TEXT
 );
 
 CREATE TABLE MASTER_PHONE (
     PhoneID SERIAL,
-    PhoneNumber VARCHAR(15)
+    PhoneNumber TEXT
 );
 
 CREATE TABLE MASTER_PROVIDER_DETAILS (
     ProviderID UUID NOT NULL PRIMARY KEY,
-    ProviderFName VARCHAR(25),
-    ProviderLName VARCHAR(25),
-    Speciality VARCHAR(20),
+    ProviderFName TEXT,
+    ProviderLName TEXT,
+    Speciality TEXT,
     Gender BOOLEAN
 );
 
@@ -102,8 +102,8 @@ CREATE TABLE PATIENTS (
 CREATE TABLE PATIENTS_IDENTIFICATION (
     PatientID UUID NOT NULL PRIMARY KEY REFERENCES PATIENTS(PatientID) ON DELETE CASCADE,
     SSN UUID NOT NULL,
-    Driver VARCHAR(10) UUID,
-    Passport VARCHAR(10) UUID
+    Driver TEXT UUID,
+    Passport TEXT UUID
 )
 */
 CREATE TABLE PATIENTS_GEOGRAPHIC_DATA (
@@ -130,7 +130,7 @@ CREATE TABLE PATIENTS_DETAILS (
     MaidenNameID  REFERENCES MASTER_NAME(NameID) ON DELETE SET NULL INT,
     Gender BOOLEAN,
     BirthplaceID INT NOT NULL, -- will need to map these IDs
-    Birthplace VARCHAR(20)
+    Birthplace TEXT
 );
 
 
