@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 
-# might want to put this into a class at some point
+# we will be converting this to a class with a few different logging features
 # *looks at watch: its not point-oclock bois
 warnings.filterwarnings('ignore')
 
@@ -255,5 +255,4 @@ def featureAggloms(X:np.ndarray,n:int,**kwargs):
     X_reduced = featGloms.transform(X)
     return X_reduced
 
-# Autocovariance? -- prolly not sicne its synth data. Some other bayesian method?
-# anything else?
+

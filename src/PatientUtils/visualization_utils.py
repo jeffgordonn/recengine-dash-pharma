@@ -231,7 +231,7 @@ def plotElbowMethod(inertia_values, label:None | str = None, save_directory:None
 def dendrogramPlot(X:np.ndarray,method:str='Ward',savefig:bool=False,display:bool=True,**kwargs):
     plt.figure(figsize=(15, 10))
     plt.grid(False)
-    Ward = sch.dendrogram(sch.linkage(X,"ward"))
+    Ward = sch.dendrogram(sch.linkage(X,method))
     plt.axhline(y=200,color='black')
     plt.title(f"Dendrogram Using {method}'s Method")
     plt.xlabel("Data Points")

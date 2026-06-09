@@ -151,68 +151,50 @@ CREATE TABLE PROVIDERS (
 );
 
 -------======================= STOPPED HERE =============================-------
-CREATE TABLE CLAIMS (
-    ClaimID UUID NOT NULL PRIMARY KEY,
-    PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL,
-    ProviderID UUID NOT NULL REFERENCES PROVIDERS(ProviderID) ON DELETE CASCADE,
-    PrimaryPatientInsuranceID UUID NOT NULL,
-    SecPatientInsuranceID UUID,
-    DeptID SMALLINT,
-    PatientDeptID INT,
-    DiagnosisCode1 INT NOT NULL,
-    DiagnosisCode2 INT,
-    DiagnosisCode3 INT, -- I am not finding float samples but we can revisit this if there are decimal values for these 3
-    DiagnosisCode4 INT,
-    DiagnosisCode5 INT,
-    DiagnosisCode6 INT,
-    DiagnosisCode7 INT, -- I am not finding float samples but we can revisit this if there are decimal values for these 3
-    DiagnosisCode8 INT,
-    -- ReferringProviderID INT, -- All NULLs according to EDA
-    AppointmentID UUID NOT NULL,
-    CurrentIllnessDate DATETIME,
-    ServiceDate DATETIME,
-    SupervisingProviderID UUID,
-    Status1ID SMALLINT, -- Map this
-    Status2ID SMALLINT, -- Map this
-    StatusPID SMALLINT, -- Map this
-    -- all of the outstanding columns were zero or nan, does not make sense to include for scope of project
-    LastBillDate1 DATETIME,
-    LastBillDate2 DATETIME,
-    LastBillDateP DATETIME,
-    HealthCareClaimTypeID1 SMALLINT,
-    HealthCareClaimTypeID2 SMALLINT
-);
-
-
 CREATE TABLE PAYERS (
     PayerID UUID NOT NULL PRIMARY KEY, -- might need to change this, it seems to be unique but if hash does not
                                        -- maintain difference across states, we might need to create a composite prim key
     PayerNameID INT NOT NULL,
-    AddressID INT NOT NULL, -- will need to map these IDs
-    CityID SMALLINT NOT NULL, -- will need to map these IDs
-    StateHQID SMALLINT NOT NULL, -- will need to map these IDs
+
+);
+
+CREATE TABLE PAYERS_CONTACT_DATA (
+    PayerID UUID NOT NULL PRIMARY KEY REFERENCES PAYERS(PayerID) ON DELETE CASCADE,
+    AddressID INT NOT NULL,
     Zip INT NOT NULL,
-    Phone VARCHAR(15),
+    CityID SMALLINT NOT NULL,
+    StateHQID SMALLINT NOT NULL,
+    Phone TEXT
+);
+
+CREATE TABLE PAYERS_COVERAGE_DETAILS (
+    PayerID UUID NOT NULL PRIMARY KEY REFERENCES PAYERS(PayerID) ON DELETE CASCADE,
     AmountCovered FLOAT,
     AmountUncovered FLOAT,
+    [Coverage%] FLOAT, -- calc column  vvvvv all with % below are calc columns
     Revenue FLOAT,
     CoveredEncounters INT,
     UncoveredEncounters INT,
+    [EncounterCoverage%] FLOAT,
     CoveredMedications INT,
     UncoveredMedications INT,
+    [MedicationsCoverage%] FLOAT,
     CoveredProcedures INT,
     UncoveredProcedures INT,
+    [ProceduresCoverage%] FLOAT,
     CoveredImmunizations INT,
     UncoveredImmunizations INT,
+    [ImmunizationsCoverage%] FLOAT,
     UniqueCustomers INT,
+    CoveragePerCustomer FLOAT,
     QOLS_AVG FLOAT,
     MemberMonths INT
-);
+)
 
 CREATE TABLE ENCOUNTERS (
     EncounterID UUID NOT NULL PRIMARY KEY,
-    [Start] DATETIME,
-    [Stop] DATETIME,
+    [Start] TIMESTAMP,
+    [Stop] TIMESTAMP,
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL,
     OrgID UUID NOT NULL REFERENCES ORGANIZATIONS(OrgID),
     ProviderID NOT NULL REFERENCES PROVIDERS(ProviderID),
@@ -228,7 +210,44 @@ CREATE TABLE ENCOUNTERS (
     -- ReasonDescriptionID INT -- this will be added to the non-paren extract list since reasoncode already does the join we need
 );
 
--- 7.
+-- actually think this is fine to keep in a large table: this should absolutely be unique.
+-- We will add a create date / update date as well
+CREATE TABLE CLAIMS (
+    ClaimID UUID NOT NULL PRIMARY KEY,
+    PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL,
+    ProviderID UUID NOT NULL REFERENCES PROVIDERS(ProviderID) ON DELETE CASCADE,
+    PrimaryPatientInsuranceID UUID NOT NULL, -- this likely references payers
+    SecPatientInsuranceID UUID,
+    DeptID SMALLINT,
+    PatientDeptID INT,
+    DiagnosisCode1 INT NOT NULL,
+    DiagnosisCode2 INT,
+    DiagnosisCode3 INT, -- I am not finding float samples but we can revisit this if there are decimal values for these 3
+    DiagnosisCode4 INT,
+    DiagnosisCode5 INT,
+    DiagnosisCode6 INT,
+    DiagnosisCode7 INT, -- I am not finding float samples but we can revisit this if there are decimal values for these 3
+    DiagnosisCode8 INT,
+    -- ReferringProviderID INT, -- All NULLs according to EDA
+    AppointmentID UUID NOT NULL,
+    CurrentIllnessDate TIMESTAMP,
+    ServiceDate TIMESTAMP,
+    SupervisingProviderID UUID,
+    Status1ID SMALLINT, -- NULL: nan, 0:BILLED, 1:CLOSED
+    Status2ID SMALLINT, -- NULL: nan, 0:BILLED, 1:CLOSED
+    StatusPID SMALLINT, -- NULL: nan, 0:BILLED, 1:CLOSED
+    -- all of the outstanding columns were zero or nan, does not make sense to include for scope of project
+    LastBillDate1 TIMESTAMP,
+    LastBillDate2 TIMESTAMP,
+    LastBillDateP TIMESTAMP,
+    HealthCareClaimTypeID1 SMALLINT,
+    HealthCareClaimTypeID2 SMALLINT,
+    CreateDate TIMESTAMP ON CREATE DEFAULT NOW(),
+    UpdateDate TIMESTAMP ON UPDATE DEFAULT NOW()
+);
+
+
+
 CREATE TABLE CLAIMSTRANSACTIONS (
     TransactionID UUID NOT NULL PRIMARY KEY,
     ClaimID UUID NOT NULL REFERENCES CLAIMS(ClaimID) ON DELETE CASCADE,
@@ -237,8 +256,8 @@ CREATE TABLE CLAIMSTRANSACTIONS (
     TransType SMALLINT,  -- will need to map these IDs
     Amount FLOAT,
     PaymentMethodID SMALLINT,  -- will need to map these IDs
-    FromDate DATETIME,
-    ToDate DATETIME,
+    FromDate TIMESTAMP,
+    ToDate TIMESTAMP,
     PlaceOfServiceID UUID NOT NULL /* this most likely references a location, we will need to find this:
                                      REFERENCES ORGANIZATIONS(OrgID) | REFERENCES PROVIDERS(ProviderID) */,
     ProcCode SMALLINT,
@@ -275,8 +294,8 @@ CREATE TABLE CLAIMSTRANSACTIONS (
 CREATE TABLE PAYERTRANSITIONS (
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL,
     MemberID UUID NOT NULL /*REFERENCES PAYERS(PatientID)?? ON DELETE CASCADE*/,
-    StartYear DATETIME,
-    EndYear DATETIME,
+    StartYear TIMESTAMP,
+    EndYear TIMESTAMP,
     PrimPayerID UUID NOT NULL REFERENCES PAYERS(PayerID),
     SecPayerID UUID NOT NULL REFERENCES PAYERS(PayerID),
     /*
@@ -290,32 +309,38 @@ CREATE TABLE PAYERTRANSITIONS (
 
 -- 9.
 CREATE TABLE CAREPLAN_REASONCODES (
-    CareplanCode BIGINT NOT NULL PRIMARY KEY,
-    [Description] VARCHAR(MAX), -- revist
-    ParenthesesDetail VARCHAR(25), --revisit
-);
-
-CREATE TABLE CAREPLAN_REASONCODES (
-    ReasonCareplanCode BIGINT NOT NULL PRIMARY KEY,
-    [Description] VARCHAR(MAX), -- revist
-    ParenthesesDetail VARCHAR(25), --revisit
+    CareplanCode BIGINT NOT NULL,
+    [Description] TEXT,
+    ParenthesesDetail TEXT, 
+    PRIMARY KEY (CareplanCode,[Description])
 );
 
 CREATE TABLE CAREPLANS (
     CareplanID UUID NOT NULL PRIMARY KEY,
-    [Start] DATETIME,
-    [End] DATETIME,
+    [Start] TIMESTAMP,
+    [End] TIMESTAMP,
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE CASCADE
-    EncounterID UUID NOT NULL REFERENCES ENCOUNTERS(EncounterID) ON DELETE CASCADE
+    EncounterID UUID NOT NULL REFERENCES ENCOUNTERS(EncounterID) ON DELETE SET NULL
     CareplanCode BIGINT NOT NULL REFERENCES CAREPLAN_CODES(CareplanCode),
     CareplanReasonCode BIGINT NOT NULL REFERENCES CAREPLAN_REASONCODES(CareplanReasonCode)
 );
 
-
-
 -- 10.
+CREATE TABLE PROCEDURES_REASONCODES (
+    ReasonCode FLOAT ,
+    ReasonDescription TEXT,
+    ParenthesesDetailDetail TEXT
+)
+
 CREATE TABLE PROCEDURES (
-    
+    [Start] TIMESTAMP,
+    [End] TIMESTAMP,
+    [PatientID] UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE CASCADE,
+    EncounterID UUID NOT NULL REFERENCES ENCOUNTERS(EncounterID) ON DELETE SET NULL,
+    ProcCode FLOAT NOT NULL,
+    [Description] TEXT,
+    BaseCost FLOAT NOT NULL,
+    ReasonCode FLOAT NOT NULL
 );
 
 -- 11.
@@ -336,8 +361,8 @@ CREATE TABLE IMMUNIZATIONS (
 -- 14.
 CREATE TABLE CONDITIONS (
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL,
-    [Start] DATETIME,
-    [Stop] DATETIME,
+    [Start] TIMESTAMP,
+    [Stop] TIMESTAMP,
     EncounterID UUID NOT NULL REFERENCES PATIENTS(EncounterID) ON DELETE CASCADE,
     Code INT,
     DescriptionID INT
@@ -351,8 +376,8 @@ CREATE TABLE IMAGINGSTUDIES (
 -- 16.
 CREATE TABLE DEVICES (
     ID SERIAL,
-    [Start] DATETIME NULL,
-    [Stop] DATETIME NULL,
+    [Start] TIMESTAMP NULL,
+    [Stop] TIMESTAMP NULL,
     PatientID UUID NOT NULL REFERENCES PATIENTS(PatientID) ON DELETE SET NULL, -- determine the hashing technique
     EncounterID UUID NOT NULL REFERENCES ENCOUNTERS(EncounterID) ON DELETE CASCADE,
     Code INT,
