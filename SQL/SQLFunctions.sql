@@ -16,6 +16,7 @@ BEGIN
 END;
 $$;
 
+/* -- do not need to make unless we add the update logics
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -23,7 +24,7 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
+*/
 
 -- Modify the column passed so that this
 CREATE FUNCTION HandleNulls(table TABLE, col TEXT, NULLMethod TEXT)

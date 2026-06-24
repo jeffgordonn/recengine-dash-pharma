@@ -11,9 +11,13 @@ I choose the 1K Sample Synthetic Patient Records.csv
 
 ## Phase 1 - Analytics Dashboarding
 ### Database Modelling
-This will be a primarily STAR schema, with integer mapping for the repetitive string data for speed reasons. This will be modelling an analytics reporting workflow so a classical STAR schema from a business warehouse is sensible here. 
+We are going to have two databases:
+1. Post python ETL raw DB > STAR Schema
+    - Will be used to construct the next DB
+    - Python ETL first for simplification of process
+2. Modeled processing layer > hybrid normalized/star schema for analytics and ML-ready feature generation
 
-### `ON DELETE` Choices for FKs
+#### `ON DELETE` Choices
 Delete on cascade is used on the following levels across fact tables. 
 > Please be mindful ALL detail tables will cascade upon deletion of the master record
 - Patients - `SET NULL`
@@ -27,9 +31,7 @@ Delete on cascade is used on the following levels across fact tables.
 
 
 ## Phase 2 - Segmentation Strategies
-### Ensemble Similarity Score - Bayesian Informed Ensemble of weighted L1, L2, Cosine distance 
-By creating an ideal patient, or multiple personas in reality, we can create a ranked list of the best serving HCPs via claims data for the patient. This will not only be able to weight the symptoms and service, but also the payer coverage. With market access being such a hot topic, such a combined logic is necessary. This is where the bayesian component will come in. 
-
+### Ideas:
 #### HCP Bayesian Informants
 The main goal of any pharmaceutical company is, unfortunately, fudicary duty. However, this does not mean we cannot inform our decisions to be guided by patient UX breadcrumbs that we can then therefore assert that our algorithms are 'patient-focused'. Prior strength will determine how strong you want to signal this claim.
 
@@ -41,3 +43,5 @@ Yes, I understand there might be other options to go to but I think this will pr
 
 ### What are we targeting?
 Well, we will select a few personas to create patient baselines and match these to their best resulting HCPs.
+
+EDA will make this more clear

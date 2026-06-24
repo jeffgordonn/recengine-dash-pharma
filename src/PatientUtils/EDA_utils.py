@@ -18,17 +18,16 @@ class EDA:
         else:
             self.name = f'init@{dt.now().strftime("%d%m%Y")}'
 
-    def __retrieveCSVPath__(self,display:bool=False):
+    def __retrieveCSVPath__(self,display_columns:bool=False):
         pdata_dir = rf"{os.environ['PATIENT_DATA_DIR']}/PatientData"
-        csv_files = []
-        for file in os.listdir(pdata_dir):
-            # only grab the CSV
-            # if str(os.path.splitext(file)).lower() == 'csv':
-            path = os.path.join(file)
-            csv_files.append(path)
-            continue
+        if display_columns:
+            csv_files = []
+            for file in os.listdir(pdata_dir):
+                # only grab the CSV
+                # if str(os.path.splitext(file)).lower() == 'csv':
+                path = os.path.join(file)
+                csv_files.append(path)
 
-        if display:
             for name in csv_files:
                 print(name)
                 with open(os.path.join(pdata_dir,name),'r') as file:
@@ -78,7 +77,7 @@ class EDA:
         '''
         Meant to be used within a loop or on a single column
         '''                                                 ### There is a few columns I have identified seperate processes for processing them, skip them here
-        if (df[str(col)].str.contains(r'\(',regex=True)) & (col not in ['UDI','ReasonDescription']):
+        if (df[str(col)].str.contains(r'\(',regex=True)) & (col not in ['UDI','REASON_DESCRIPTION','BODYSITE_DESCRIPTION']):
             # creating map df
             df[f'{str(col)}Detail'] = df.str.extract(r'\((.*?)\)',expand=False) # grab parentheses data IF any
             df[str(col)] = df[str(col)].str.replace(r'\s*\(.*?\)','',regex=True).str.strip() # reset the og column to non-parentheses data
@@ -113,9 +112,9 @@ class EDA:
             if not os.path.exists(subdir):
                 os.makedirs(subdir)
         for key in dfdict.keys():
-            dfdict[key].to_csv(f'{subdir}/{key}.csv',index=False)
+            dfdict[key].to_csv(f'{subdir}/{key}_mapped.csv',index=False)
             if print_path:
-                print(f'{subdir}/{key}.csv')
+                print(f'{subdir}/{key}_mapped.csv')
 
     def displayUniqueStringDataFromParentheses(
             self, df:pd.DataFrame, 
@@ -125,13 +124,10 @@ class EDA:
         '''
         Performing ETL on parentheses, extending original data to include these IDs.
 
-        **PLEASE BEAWARE THIS WILL OVERWRITE THE FILE PASSED**
-
         Purpose 1: This will display all of the columns with string data that has parentheses enclosed text.
         Purpose 2: Using dfExtractFromParentheses() we will map the strings and their parentheses data to seperate columns and mapping tables,
           which I decided to in python since I had noticed this at this stage. Other string mapping can be taken care in SQL, I just prefer the
-          regex interface in python. **PLEASE NOTE THAT THIS WILL OVERWRITE THE CSV FILES**. This is why in `activate_setup.txt` there is a backup
-          folder created.
+          regex interface in python.
         Purpose 3: Return the map of dictionaries if there is a desire to analyze this further in python
 
         '''
@@ -146,6 +142,7 @@ class EDA:
         stringcols = self.__findStringColumns__(df)
         dfmapdict = {}
         for col in stringcols:
+            # overwrites data
             parendf = self.__dfExtractFromParentheses__(df,col)
             dfmapdict[f'{filename}_{col}'] = parendf
 
@@ -155,7 +152,7 @@ class EDA:
                     print(df[col].nunique().head(len(df[col].nunique)))
 
         if self.store_outputs:
-            for name, df  in dfmapdict.items():
+            for name, df in dfmapdict.items():
                 self.eda_data[name] = df
 
         if (bool(options['DictReturn'])) & (bool(options['toCSV'])):
@@ -176,6 +173,8 @@ class EDA:
     ):
         '''
         Extract these special ID strings, return them in a mapped out df
+
+        You can also put in other patterns, technically. But it is for the GSI Extract seen in the data.
         '''
         df[f'{str(col)}ID'] = pd.factorize(df[col])[0]+1
         gsi_df = df[[col],f'{str(col)}ID'].copy()
@@ -189,4 +188,7 @@ class EDA:
                 # muhahaha nearly as confusing but with some kind of date associable
                 # lol i prolly should just add the column name, if there is more then 3 prolly will
                 self.eda_data[f'{col}_gsi_{dt.now().strftime("%d%m%Y")}'] = gsi_df
+
+        if self.store_outputs:
+            self.eda_data[f'GSI_Extract_{col}']
         return gsi_df
