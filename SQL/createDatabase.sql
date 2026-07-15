@@ -1,4 +1,4 @@
-CREATE DATABASE RAWPATIENTSDATA;
+CREATE DATABASE PATIENTS_STAGING;
 -- python script will load the necessary tables here, WILL NOT INCLUDE the description mapping tables
 
 CREATE DATABASE PATIENTSDW;
